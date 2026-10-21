@@ -1,27 +1,21 @@
+
 pub const PROTOCOL_VERSION: u32 = 1;
 
-
-pub enum MetricType {
-    CpuPercent,
-    MemoryTotalBytes,
-    MemoryUsedBytes,
-    DiskTotalBytes,
-    DiskUsedBytes,
+pub enum Metric {
+    CpuPercent(f64),
+    MemoryTotalBytes(u64),
+    MemoryUsedBytes(u64),
+    DiskTotalBytes(u64),
+    DiskUsedBytes(u64),
 }
 
-pub enum MetricValue {
-    Decimal(f64),
-    Integer(u64),
-}
-
-pub struct Metrics {
-    pub metric_type: MetricType,
-    pub metric_value: MetricValue,
+pub struct MetricSample {
+    pub metric: Metric,
     pub component: String,
 }
 
-pub struct MetricLogs{
-    pub metrics: Vec<Metrics>,
+pub struct MetricsPayload {
+    pub metrics: Vec<MetricSample>,
 }
 
 pub struct FileSystemEvent {}
@@ -44,7 +38,7 @@ pub struct Message {
 }
 
 pub enum Payload {
-    MetricLogs(MetricLogs),
+    Metrics(MetricsPayload),
     FileSystem(FileSystemEvent),
     SystemLog(SystemLogEvent),
     VigieAgentLog(VigieAgentLogEvent),
