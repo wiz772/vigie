@@ -17,11 +17,11 @@ pub enum MetricValue {
 pub struct Metrics {
     pub metric_type: MetricType,
     pub metric_value: MetricValue,
-    pub component: String
+    pub component: String,
 }
 
 pub struct MetricLogs{
-    pub metrics: Vec<Metrics>
+    pub metrics: Vec<Metrics>,
 }
 
 pub struct FileSystemEvent {}
@@ -47,5 +47,5 @@ pub enum Payload {
     MetricLogs(MetricLogs),
     FileSystem(FileSystemEvent),
     SystemLog(SystemLogEvent),
-    VigieAgentLog(VigieAgentLogEvent)
+    VigieAgentLog(VigieAgentLogEvent),
 }
