@@ -1,14 +1,33 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+pub const PROTOCOL_VERSION: u32 = 1;
+
+pub struct Metric{
+
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub struct FileSystemEvent{
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
 }
+
+pub struct LogEvent{
+
+}
+
+pub struct Batch{
+    pub protocol_version: u32,
+    pub agent_version: String,
+    pub agent_id: String,
+    pub content: Vec<Message>,
+
+}
+
+pub struct Message{
+    pub timestamp: u64,
+    pub payload: Payload
+}
+
+pub enum Payload {
+    Metrics(Metric),
+    FileSystem(FileSystemEvent),
+    Log(LogEvent),
+}
+
