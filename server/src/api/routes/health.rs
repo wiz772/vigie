@@ -5,5 +5,5 @@ async fn health() -> &'static str {
 }
 
 pub fn router() -> Router {
-    Router::new().route("/health", get(health))
+    Router::new().route("/api/v1/health", get(health))
 }
