@@ -31,7 +31,6 @@ pub struct SystemLogEvent {}
 #[derive(Serialize, Deserialize)]
 pub struct VigieAgentLogEvent {}
 
-
 #[derive(Serialize, Deserialize)]
 pub enum Payload {
     Metrics(MetricsPayload),
