@@ -1,9 +1,9 @@
+mod api;
 mod config;
-use axum::{Router, routing::get};
 use config::Config;
 
 async fn start_axum(server_host: &str, server_port: u16) {
-    let app: Router = Router::new().route("/health", get(|| async { "ok" }));
+    let app = api::router::create_router();
     let listener = match tokio::net::TcpListener::bind((server_host, server_port)).await {
         Ok(l) => l,
         Err(e) => {
