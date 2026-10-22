@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 pub const PROTOCOL_VERSION: u32 = 1;
 
-
 #[derive(Serialize, Deserialize)]
 pub enum Metric {
     CpuPercent(f64),
@@ -55,4 +54,3 @@ pub struct Batch {
     pub host_id: String,
     pub messages: Vec<Message>,
 }
-
