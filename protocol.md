@@ -40,18 +40,21 @@ A batch contains metadata and a list of timestamped messages.
 | `agent_version` | String | Yes | Version of the agent software. |
 | `agent_id` | String | Yes | Stable identifier for this agent installation. |
 | `host_id` | String | Yes | Stable identifier for the monitored machine or virtual machine. |
+| `batch_id` | String | Yes | Identifier of this batch, unique among the batches of the same agent. Used to detect duplicates. |
 | `messages` | List of Message | Yes | Messages included in the batch. |
 
 Requirements:
 
-- `agent_version`, `agent_id`, and `host_id` MUST NOT be empty.
-- Identifiers MUST be treated as opaque strings. Receivers MUST NOT assume a particular format or operating system.
+- `agent_version`, `agent_id`, `host_id`, and `batch_id` MUST NOT be empty.
+- Identifiers MUST be treated as opaque strings by receivers. Receivers MUST NOT assume a particular format or operating system.
 - The agent SHOULD persist its `agent_id` across restarts.
 - The agent SHOULD keep the same `host_id` for the same machine.
-- The agent MUST NOT generate new identifiers for every batch.
+- The agent MUST NOT generate a new `agent_id` or `host_id` for every batch.
 - An empty `messages` list is structurally valid, although an agent SHOULD avoid sending empty batches unless necessary.
 
-The exact identifier-generation and provisioning mechanisms are implementation details and are not defined by this specification.
+`batch_id` follows specific rules, described in section 5.3.
+
+The exact generation, provisioning, and persistence mechanisms for `agent_id` and `host_id` are implementation details and are not defined by this specification.
 
 ### 3.2 Message
 
@@ -137,7 +140,7 @@ Before storing a batch, the server MUST:
 
 1. Verify that the protocol version is supported.
 2. Verify that required fields are present and have the specified types.
-3. Reject empty required identifiers and component names.
+3. Reject empty required identifiers (including `batch_id`) and component names.
 4. Validate metric names and numeric values.
 5. Reject unsupported payload categories.
 6. Enforce its limits for request size, message count, and metric count.
@@ -151,16 +154,37 @@ To let agents know what they can safely send, every server MUST accept batches w
 - request body: 1 MiB;
 - messages per batch: 1000;
 - samples per MetricsPayload: 1000;
-- length of any string field: 256 characters.
+- length of any string field (including identifiers): 256 characters.
 
 An agent SHOULD stay within these limits.
 
 ### 5.2 Permanent and temporary failures
 
 - A batch rejected because it is invalid is a **permanent** failure. The agent MUST NOT resend the same batch unchanged. It SHOULD log the failure and discard the batch.
-- A failure caused by a server that is unreachable or overloaded is **temporary**. The agent SHOULD keep the batch and retry with an increasing delay between attempts.
+- A failure caused by a server that is unreachable or overloaded is **temporary**. The agent SHOULD keep the batch and retry with an increasing delay between attempts. When it retries, it MUST resend the batch with the same `batch_id` (see section 5.3).
+- A batch recognized as a duplicate (section 5.3) is **not a failure**.
 
-The transport layer MUST allow an agent to tell these two cases apart. Exact HTTP status codes and the error response format are not defined yet. Error responses SHOULD NOT expose secrets or internal implementation details.
+The transport layer MUST allow an agent to tell these cases apart. Exact HTTP status codes and the error response format are not defined yet. Error responses SHOULD NOT expose secrets or internal implementation details.
+
+### 5.3 Batch identifiers and duplicate handling
+
+An agent may not know whether a batch was received, for example when a connection is lost before the response arrives. It then resends the batch. `batch_id` allows the server to recognize such a resend and avoid storing the data twice.
+
+Agent requirements:
+
+- The agent MUST generate `batch_id` once, when it creates the batch.
+- The agent MUST resend the batch with the same `batch_id` on every retry. It MUST therefore persist the `batch_id` together with the batch for as long as the batch can be resent.
+- The agent MUST NOT reuse a `batch_id` for a batch with different content.
+- The `batch_id` MUST be unique among the batches of the same agent. The agent SHOULD use a UUID (version 4 or 7), which satisfies this requirement. The identifier is an opaque string of at most 256 characters (see section 5.1).
+- The agent MUST NOT resend a batch that is older than the minimum retention window below. It SHOULD discard it instead.
+
+Server requirements:
+
+- The server identifies a batch by the pair (`agent_id`, `batch_id`).
+- If the server receives a batch whose pair it has already stored, it MUST NOT store the data a second time.
+- The server MUST treat such a duplicate as a **success** for the agent, so that the agent stops resending it. It MAY indicate in the response that the batch was a duplicate. The exact response format is not defined yet.
+- The server MUST remember the identifiers of stored batches for at least 7 days (the minimum retention window). It MAY remember them longer.
+- The server SHOULD store a batch and its contents atomically (all or nothing), so that a failure in the middle of storage cannot leave a batch recorded without its contents, which would cause a legitimate resend to be wrongly ignored.
 
 ## 6. Serialization and transport
 
@@ -175,7 +199,7 @@ The MVP is expected to use an HTTP-based API. The following details are not yet 
 - endpoint paths and HTTP methods;
 - authentication headers;
 - request and response formats;
-- retry behavior (beyond section 5.2);
+- retry behavior (beyond sections 5.2 and 5.3);
 - compression;
 - delivery guarantees.
 
@@ -189,7 +213,7 @@ These details MUST be documented before interoperability between independent imp
 - Communication SHOULD use TLS when data leaves a trusted local environment.
 - The server SHOULD enforce request-size and rate limits.
 - Logs and error messages SHOULD avoid exposing credentials or sensitive information.
-- `agent_id` and `host_id` are identifiers, not authentication credentials. Knowing an identifier alone MUST NOT grant access.
+- `agent_id`, `host_id`, and `batch_id` are identifiers, not authentication credentials. Knowing an identifier alone MUST NOT grant access.
 - The security of the protocol MUST NOT depend on the secrecy of this specification.
 
 The authentication scheme, agent enrollment process, credential rotation, and authorization model remain to be specified.
@@ -200,15 +224,15 @@ This protocol defines the data exchanged with the server, not its database schem
 
 - The server SHOULD preserve the original collection timestamp, and SHOULD also record a separate receipt timestamp.
 - The server SHOULD store metric names, values, component identifiers, and timestamps in a way that supports querying historical readings.
+- Duplicate batches are handled as described in section 5.3. A uniqueness constraint on (`agent_id`, `batch_id`) is one way to implement this.
 
-Table names, indexes, retention periods, aggregation, and duplicate handling are implementation details not defined by this protocol.
+Table names, indexes, retention periods, and aggregation are implementation details not defined by this protocol.
 
 ## 9. Open decisions and not yet specified
 
 Decisions to take before the first public release:
 
 - **Unknown data.** This revision is strict: unknown metric names and unsupported payload categories cause the whole batch to be rejected. The alternative is to ignore unknown metrics, payload categories, and fields (and count them), so that a newer agent keeps working with an older server. The behavior for unknown fields inside known objects is not specified yet.
-- **Batch identifier.** An optional `batch_id` would let the server detect duplicates when an agent resends a batch whose acknowledgement was lost.
 - **Component naming convention** (for example total CPU versus individual cores, partitions versus physical disks), and whether `CpuPercent` is machine-wide or per core.
 
 Not yet specified:
@@ -217,8 +241,8 @@ Not yet specified:
 - exact JSON encoding of enum variants;
 - agent authentication and authorization;
 - transport encryption requirements;
-- acknowledgements and duplicate handling;
+- format of acknowledgements and of duplicate indications in responses;
 - schemas for filesystem events, system logs, and agent logs;
-- identifier generation and persistence rules.
+- identifier generation and persistence rules for `agent_id` and `host_id`.
 
 These details should be defined before the protocol is considered complete for production use.
