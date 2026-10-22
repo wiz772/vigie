@@ -7,6 +7,7 @@ fn batch_can_be_serialized_and_deserialized() {
         agent_version: "0.1.0".to_string(),
         agent_id: "agent-001-test".to_string(),
         host_id: "host-001-test".to_string(),
+        batch_id: "a1zczq2E2E2d".to_string(),
         messages: vec![Message {
             timestamp_ms: 1792600000000,
             payload: Payload::Metrics(MetricsPayload {
