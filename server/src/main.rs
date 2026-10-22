@@ -12,6 +12,8 @@ async fn start_axum(server_host: &str, server_port: u16) {
         }
     };
 
+    println!("Listening on {}:{}...", server_host, server_port);
+
     match axum::serve(listener, app).await {
         Ok(l) => l,
         Err(e) => {
