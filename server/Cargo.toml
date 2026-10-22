@@ -7,4 +7,5 @@ license.workspace = true
 [dependencies]
 axum = "0.8.9"
 common = { path = "../common" }
+dotenvy = "0.15.7"
 tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "net"] }
