@@ -51,5 +51,6 @@ pub struct Batch {
     pub agent_version: String,
     pub agent_id: String,
     pub host_id: String,
+    pub batch_id: String,
     pub messages: Vec<Message>,
 }
