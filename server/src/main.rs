@@ -52,7 +52,7 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let state = AppState { db: pool };
+    let state = AppState { _db: pool };
 
     start_axum(&config.server_host, config.server_port, state).await;
 }
