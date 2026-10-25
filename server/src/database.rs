@@ -6,5 +6,7 @@ pub async fn connect_db(database_url: &str) -> Result<Pool<Postgres>, Error> {
 }
 
 pub async fn apply_migrations(pool: &Pool<Postgres>) -> Result<(), sqlx::migrate::MigrateError> {
-    sqlx::migrate!("./migrations").run(pool).await
+    sqlx::migrate!("./migrations").run(pool).await?;
+    println!("Database migrations completed successfully.");
+    Ok(())
 }
