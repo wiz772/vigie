@@ -2,7 +2,7 @@ const DEFAULT_SERVER_HOST: &str = "127.0.0.1";
 const DEFAULT_SERVER_PORT: u16 = 3000;
 
 pub struct Config {
-    // pub database_url: String,
+    pub database_url: String,
     pub server_host: String,
     pub server_port: u16,
 }
@@ -24,8 +24,8 @@ fn read_var(name: &str) -> Result<Option<String>, String> {
 
 impl Config {
     pub fn load() -> Result<Self, String> {
-        // let database_url =
-        //     read_var("VIGIE_DATABASE_URL")?.ok_or("VIGIE_DATABASE_URL is missing")?;
+        let database_url =
+            read_var("VIGIE_DATABASE_URL")?.ok_or("VIGIE_DATABASE_URL is missing")?;
 
         let server_host =
             read_var("VIGIE_HOST")?.unwrap_or_else(|| DEFAULT_SERVER_HOST.to_string());
@@ -44,7 +44,7 @@ impl Config {
         };
 
         Ok(Self {
-            // database_url,
+            database_url,
             server_host,
             server_port,
         })

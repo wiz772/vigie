@@ -8,4 +8,5 @@ license.workspace = true
 axum = "0.8.9"
 common = { path = "../common" }
 dotenvy = "0.15.7"
+sqlx = { version = "0.9.0", features = ["runtime-tokio", "postgres", "migrate", "macros"] }
 tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "net"] }

@@ -1,4 +1,5 @@
 use crate::services::metrics;
+use crate::state::AppState;
 use axum::{Json, Router, routing::post};
 use common::{Batch, Payload};
 
@@ -29,6 +30,6 @@ async fn ingest_batch(Json(batch): Json<Batch>) {
     // send to serverlogger
 }
 
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new().route("/api/v1/ingest", post(ingest_batch))
 }
