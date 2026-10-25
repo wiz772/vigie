@@ -40,7 +40,7 @@ async fn main() {
         Ok(pool) => {
             println!("[INFO] Connected to PostgreSQL successfully!");
             pool
-        },
+        }
         Err(e) => {
             eprintln!("Database initialization error: {e}");
             std::process::exit(1);
