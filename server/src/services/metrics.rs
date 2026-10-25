@@ -1,5 +1,10 @@
 use common::MetricsPayload;
+use sqlx::PgPool;
 
-pub fn ingest_metrics(_data: MetricsPayload, _host_id: &str) {
-    // ...
+pub async fn ingest_metrics(
+    pool: &PgPool,
+    data: Vec<MetricsPayload>,
+    batch_id: &str,
+    host_id: &str,
+) {
 }
