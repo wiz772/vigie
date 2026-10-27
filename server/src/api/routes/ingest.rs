@@ -17,7 +17,7 @@ async fn ingest_batch(State(state): State<AppState>, Json(batch): Json<Batch>) {
         }
     }
 
-    metrics::ingest_metrics(&state.db, metrics_batch, &batch.batch_id, &batch.host_id).await;
+    metrics::ingest_metrics(&state.db, metrics_batch, &batch.batch_id,&batch.agent_id, batch.protocol_version,).await;
 }
 
 pub fn router() -> Router<AppState> {
