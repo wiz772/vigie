@@ -1,3 +1,4 @@
+
 use common::{Metric, MetricSample, MetricsPayload};
 use server::services::metrics::ingest_metrics;
 use sqlx::PgPool;
@@ -31,46 +32,58 @@ async fn test_metric_ingestion(pool: PgPool) {
         ],
     };
 
-    let data = vec![(1793500000000, payload)];
+    let data = vec![(1793500000000_u64, payload)];
 
-    sqlx::query!(
-        "INSERT INTO hosts (host_id, hostname) VALUES ($1, $2)",
-        "test-host-001",
-        "test-machine"
+    sqlx::query(
+        "INSERT INTO hosts (host_id, hostname) VALUES ($1, $2)"
     )
+    .bind("test-host-001")
+    .bind("test-machine")
     .execute(&pool)
     .await
     .unwrap();
 
-    sqlx::query!(
-        "INSERT INTO agents (agent_id, host_id, agent_version) VALUES ($1, $2, $3)",
-        "test-agent-001",
-        "test-host-001",
-        "0.1.0"
+    sqlx::query(
+        "INSERT INTO agents (agent_id, host_id, agent_version) VALUES ($1, $2, $3)"
     )
+    .bind("test-agent-001")
+    .bind("test-host-001")
+    .bind("0.1.0")
     .execute(&pool)
     .await
     .unwrap();
 
-    sqlx::query!(
-        "INSERT INTO batches (batch_id, agent_id, protocol_version) VALUES ($1, $2, $3)",
-        batch_id,
-        "test-agent-001",
-        1_i32
+    sqlx::query(
+        "INSERT INTO batches (batch_id, agent_id, protocol_version) VALUES ($1, $2, $3)"
     )
+    .bind(batch_id)
+    .bind("test-agent-001")
+    .bind(1_i32)
     .execute(&pool)
     .await
     .unwrap();
 
-    let result = ingest_metrics(&pool, data, batch_id).await;
-
-    result.expect("Metrics ingestion should succeed");
-
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM metric_samples WHERE batch_id = $1")
-        .bind(batch_id)
-        .fetch_one(&pool)
+    ingest_metrics(&pool, data, batch_id)
         .await
-        .unwrap();
+        .expect("Metrics ingestion should succeed");
+
+    let count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM metric_samples WHERE batch_id = $1"
+    )
+    .bind(batch_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
 
     assert_eq!(count, 5);
+
+    let timestamps: Vec<i64> = sqlx::query_scalar(
+        "SELECT DISTINCT timestamp_ms FROM metric_samples WHERE batch_id = $1"
+    )
+    .bind(batch_id)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+
+    assert_eq!(timestamps, vec![1793500000000_i64]);
 }
