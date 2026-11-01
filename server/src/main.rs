@@ -1,9 +1,5 @@
-mod api;
-mod config;
-mod database;
-mod services;
-mod state;
 use config::Config;
+use server::{api, config, database, state};
 use state::AppState;
 
 async fn start_axum(server_host: &str, server_port: u16, state: AppState) {
